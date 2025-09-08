@@ -1,0 +1,4 @@
+.drawer { position: sticky; top: 5rem; }
+.drawer .list { list-style: none; padding: 0; margin: 0 0 1rem; display: flex; flex-direction: column; gap: .5rem; }
+.drawer .row { display: grid; grid-template-columns: 1fr auto auto; gap: .5rem; align-items: center; }
+.drawer .link { background: none; border: none; color: #c00; cursor: pointer; }

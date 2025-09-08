@@ -1,0 +1,33 @@
+:root { --primary: #d35400; --bg: #fff; --text: #222; }
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; padding: 0; font-family: system-ui, Arial; background: var(--bg); color: var(--text); }
+a { color: inherit; text-decoration: none; }
+.container { max-width: 1100px; margin: 0 auto; padding: 1rem; }
+.btn {
+  display: block;              /* הופך כל כפתור לשורה מלאה */
+  width: 100%;                 /* שהכפתור יתפרס על כל הרוחב של הקונטיינר */
+  max-width: 250px;            /* מגביל את הרוחב כדי שלא יהיה גדול מדי */
+  margin: 0.5rem auto;         /* רווח בין כפתורים ומרכז אותם */
+  background: var(--primary);  
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 0.6rem;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.btn:hover {
+  background: var(--primary-dark, #444); /* צבע כהה יותר בהובר */
+  transform: translateY(-2px);           /* הרמה קטנה */
+}
+
+.btn:active {
+  transform: translateY(0);              /* חזרה למקום בלחיצה */
+}
+.input { padding: .6rem .8rem; border: 1px solid #ddd; border-radius: .5rem; width: 100%; }
+.card { border: 1px solid #eee; border-radius: 1rem; padding: 1rem; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+@media (max-width: 1024px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 768px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }

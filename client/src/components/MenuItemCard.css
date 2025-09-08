@@ -1,0 +1,5 @@
+.item-card { display: flex; flex-direction: column; gap: .5rem; }
+.item-card .thumb { width: 100%; height: 160px; object-fit: cover; border-radius: .6rem; }
+.item-card .row { display: flex; align-items: center; justify-content: space-between; }
+.item-card .price { font-weight: 700; }
+.item-card .desc { color: #555; min-height: 2em; }

@@ -1,0 +1,5 @@
+.dash .row.between { display: flex; align-items: center; justify-content: space-between; }
+.grid2 { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+@media (min-width: 1000px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+.dash table { width: 100%; border-collapse: collapse; }
+.dash th, .dash td { border-bottom: 1px solid #eee; padding: .5rem; text-align: right; }

@@ -1,0 +1,7 @@
+.admin { display: grid; gap: 1rem; }
+.grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: .8rem; }
+.grid2 textarea { grid-column: 1 / -1; min-height: 80px; }
+.table table { width: 100%; border-collapse: collapse; }
+.table th, .table td { border-bottom: 1px solid #eee; padding: .5rem; text-align: right; }
+.table input[type="number"] { width: 100px; }
+@media (max-width: 768px) { .grid2 { grid-template-columns: 1fr; } }
