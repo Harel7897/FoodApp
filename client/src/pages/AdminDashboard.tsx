@@ -40,7 +40,7 @@ return (
 <td>{formatCurrency(o.total)}</td>
 <td>{o.status}</td>
 <td>
-{['ממתין', 'בהכנה', 'מוכן', 'סופק', 'בוטל'].map(s => (
+{['ממתין', 'בהכנה', 'מוכן'].map(s => (
 <button key={s} className="btn"  onClick={() => setStatus(o._id, s)}>{s}</button>
 ))}
 </td>

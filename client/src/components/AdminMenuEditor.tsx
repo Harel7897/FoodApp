@@ -3,6 +3,7 @@ import './AdminMenuEditor.css';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { type MenuItem } from '../types';
+import { uploadImageToCloudinary } from '../services/upload'; // הוספתי את זה
 
 const empty: Partial<MenuItem> = { name: '', price: 0, description: '', imageUrl: '', category: '', isAvailable: true };
 
@@ -10,27 +11,49 @@ const AdminMenuEditor: React.FC = () => {
   const { token } = useAuth();
   const [items, setItems] = useState<MenuItem[]>([]);
   const [form, setForm] = useState<Partial<MenuItem>>(empty);
+  const [imageFile, setImageFile] = useState<File | null>(null); // ← קובץ מקומי שנבחר
 
   const load = async () => setItems(await api.getMenu());
   useEffect(() => { load(); }, []);
 
-const save = async (e: any) => {
-    e.preventDefault()
-  if (!token) return;
+  const save = async (e: any) => {
+    e.preventDefault();
+    if (!token) return;
 
-  // הדפסת הנתונים לפני שליחה
-  console.log("Sending data to server:", form);
+    // הדפסת הנתונים לפני שליחה
+    console.log("Sending data to server:", form);
 
-  if (!form.name || form.price === undefined) {
-    return alert('שם ומחיר נדרשים');
-  }
+    if (!form.name || form.price === undefined) {
+      return alert('שם ומחיר נדרשים');
+    }
 
-  await api.createMenuItem(token, form);
+    // אם נבחר קובץ → העלאה ל-Cloudinary
+    if (imageFile) {
+      try {
+        // העלאת הקובץ ל-Cloudinary וקבלת URL
+        const secureUrl = await uploadImageToCloudinary(imageFile, {
+          cloudName: 'dsfieqr7i',  // החלף עם הפרטים שלך
+          uploadPreset: 'unsigned_preset',  // החלף עם ה-upload preset שלך
+        });
+        setForm(f => ({ ...f, imageUrl: secureUrl })); // עדכון ה-imageUrl ב-form
 
-  setForm(empty); 
-  await load();
-};
+        // יצירת המוצר בשרת
+        await api.createMenuItem(token, { ...form, imageUrl: secureUrl });
 
+      } catch (err) {
+        console.error('העלאת התמונה נכשלה:', err);
+        alert('העלאת התמונה נכשלה');
+      }
+    } else {
+      // ללא קובץ → נשארים עם ה-API הקיים ששולח JSON עם imageUrl
+      await api.createMenuItem(token, form);
+    }
+
+    // ניקוי הטופס והקובץ
+    setImageFile(null);
+    setForm(empty);
+    await load();
+  };
 
   const update = async (id: string, patch: Partial<MenuItem>) => {
     if (!token) return; await api.updateMenuItem(token, id, patch); await load();
@@ -46,11 +69,40 @@ const save = async (e: any) => {
           <input className="input" placeholder="שם"  value={form.name||''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
           <input className="input" placeholder="מחיר" type="number" value={form.price||0} onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))} />
           <input className="input" placeholder="קטגוריה" value={form.category||''} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} />
-          <input className="input" placeholder="תמונה (URL)" value={form.imageUrl||''} onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))} />
+          
+          {/* בחירת קובץ תמונה מהמחשב */}
+          <input
+            className="input"
+            type="file"
+            accept="image/*"
+            onChange={e => {
+              const file = e.target.files?.[0] || null;
+              setImageFile(file);
+              // תצוגת מקדימה מקומית (לא URL חיצוני)
+              if (file) {
+                const preview = URL.createObjectURL(file);
+                setForm(f => ({ ...f, imageUrl: preview }));
+              } else {
+                setForm(f => ({ ...f, imageUrl: '' }));
+              }
+            }}
+          />
+
+          {/* עדיין משאיר את שדה ה-URL למקרה שרוצים גם לעבוד עם קישורים, לא חובה להשתמש בו */}
+
           <textarea className="input" placeholder="תיאור" value={form.description||''} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
           <label style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
             <input type="checkbox" checked={form.isAvailable ?? true} onChange={e => setForm(f => ({ ...f, isAvailable: e.target.checked }))} /> זמין
           </label>
+
+          {/* תצוגת מקדימה לתמונה שנבחרה */}
+          {form.imageUrl ? (
+            <img
+              src={form.imageUrl}
+              alt="תצוגה מקדימה"
+              style={{ width: 160, height: 160, objectFit: 'cover', borderRadius: 12, background: '#f2f2f2' }}
+            />
+          ) : null}
         </div>
         <button className="btn" onClick={save}>שמור</button>
       </div>

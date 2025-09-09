@@ -12,13 +12,14 @@ const { formatCurrency } = useFx();
 
 return (
 <div className="card item-card">
-{item.imageUrl && <img src={item.imageUrl} alt={item.name} className="thumb" />}
 <h3>{item.name}</h3>
+{item.imageUrl && <img src={item.imageUrl} alt={item.name} className="thumb" />}
 <p className="desc">{item.description}</p>
 <div className="row">
 <span className="price">{formatCurrency(item.price)}</span>
-<button className="btn" onClick={() => add(item)}>הוסף</button>
 </div>
+<button className="btn" onClick={() => add(item)}>הוסף</button>
+
 </div>
 );
 };
