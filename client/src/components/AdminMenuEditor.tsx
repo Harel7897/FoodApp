@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import './AdminMenuEditor.css';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -11,10 +11,14 @@ const AdminMenuEditor: React.FC = () => {
   const { token } = useAuth();
   const [items, setItems] = useState<MenuItem[]>([]);
   const [form, setForm] = useState<Partial<MenuItem>>(empty);
+  const [editingId, setEditingId] = useState<string | null>(null); // Track which item is being edited
   const [imageFile, setImageFile] = useState<File | null>(null); // ← קובץ מקומי שנבחר
 
-  const load = async () => setItems(await api.getMenu());
-  useEffect(() => { load(); }, []);
+  const load = useCallback(async () => { 
+    if (token) setItems(await api.getAllMenuItems(token)); 
+  }, [token]);
+  
+  useEffect(() => { load(); }, [load]);
 
   const save = async (e: any) => {
     e.preventDefault();
@@ -37,8 +41,12 @@ const AdminMenuEditor: React.FC = () => {
         });
         setForm(f => ({ ...f, imageUrl: secureUrl })); // עדכון ה-imageUrl ב-form
 
-        // יצירת המוצר בשרת
-        await api.createMenuItem(token, { ...form, imageUrl: secureUrl });
+        // עדכון או יצירת המוצר בשרת
+        if (editingId) {
+          await api.updateMenuItem(token, editingId, { ...form, imageUrl: secureUrl });
+        } else {
+          await api.createMenuItem(token, { ...form, imageUrl: secureUrl });
+        }
 
       } catch (err) {
         console.error('העלאת התמונה נכשלה:', err);
@@ -46,12 +54,17 @@ const AdminMenuEditor: React.FC = () => {
       }
     } else {
       // ללא קובץ → נשארים עם ה-API הקיים ששולח JSON עם imageUrl
-      await api.createMenuItem(token, form);
+      if (editingId) {
+        await api.updateMenuItem(token, editingId, form);
+      } else {
+        await api.createMenuItem(token, form);
+      }
     }
 
     // ניקוי הטופס והקובץ
     setImageFile(null);
     setForm(empty);
+    setEditingId(null);
     await load();
   };
 
@@ -61,10 +74,29 @@ const AdminMenuEditor: React.FC = () => {
 
   const remove = async (id: string) => { if (!token) return; await api.deleteMenuItem(token, id); await load(); };
 
+  const editItem = (item: MenuItem) => {
+    setForm({
+      name: item.name,
+      price: item.price,
+      description: item.description || '',
+      imageUrl: item.imageUrl || '',
+      category: item.category || '',
+      isAvailable: item.isAvailable
+    });
+    setEditingId(item._id);
+    setImageFile(null);
+  };
+
+  const cancelEdit = () => {
+    setForm(empty);
+    setEditingId(null);
+    setImageFile(null);
+  };
+
   return (
     <div className="admin">
       <div className="card editor">
-        <h3>הוספת פריט</h3>
+        <h3>{editingId ? 'עריכת פריט' : 'הוספת פריט'}</h3>
         <div className="grid2">
           <input className="input" placeholder="שם"  value={form.name||''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
           <input className="input" placeholder="מחיר" type="number" value={form.price||0} onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))} />
@@ -104,7 +136,10 @@ const AdminMenuEditor: React.FC = () => {
             />
           ) : null}
         </div>
-        <button className="btn" onClick={save}>שמור</button>
+        <div style={{ display: 'flex', gap: '.5rem' }}>
+          <button className="btn" onClick={save}>{editingId ? 'עדכן' : 'שמור'}</button>
+          {editingId && <button className="btn" style={{ background: '#888' }} onClick={cancelEdit}>ביטול</button>}
+        </div>
       </div>
 
       <div className="card table">
@@ -125,7 +160,7 @@ const AdminMenuEditor: React.FC = () => {
                   <input type="checkbox" defaultChecked={i.isAvailable} onChange={(e) => update(i._id, { isAvailable: e.target.checked })} />
                 </td>
                 <td>
-                  <button className="btn" style={{ background:'#888' }} onClick={() => update(i._id, { name: prompt('שם חדש', i.name)||i.name })}>ערוך</button>
+                  <button className="btn" style={{ background:'#888' }} onClick={() => editItem(i)}>ערוך</button>
                   <button className="btn" style={{ background:'#c0392b' }} onClick={() => remove(i._id)}>מחק</button>
                 </td>
               </tr>

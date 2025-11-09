@@ -10,6 +10,12 @@ router.get('/', async (_req, res) => {
   res.json(items);
 });
 
+// Admin - get all items including unavailable
+router.get('/admin/all', requireAdmin, async (_req, res) => {
+  const items = await MenuItem.find({}).sort({ createdAt: -1 });
+  res.json(items);
+});
+
 // Admin
 router.post('/', requireAdmin, async (req, res) => {
   console.log("Received data:", req.body);  // הדפסת הנתונים המתקבלים

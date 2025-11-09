@@ -20,6 +20,7 @@ export const api = {
   seedAdmin: () => request('/api/auth/seed-admin', { method: 'POST' }),
   login: (email: string, password: string) => request('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   getMenu: (): Promise<any[]> => request('/api/menu'),
+  getAllMenuItems: (token: string): Promise<any[]> => request('/api/menu/admin/all', { headers: { Authorization: `Bearer ${token}` } }),
   createMenuItem: (token: string, data: any) => request('/api/menu', { method: 'POST', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
   updateMenuItem: (token: string, id: string, data: any) => request(`/api/menu/${id}`, { method: 'PUT', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
   deleteMenuItem: (token: string, id: string) => request(`/api/menu/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
