@@ -13,8 +13,19 @@ const AdminMenuEditor: React.FC = () => {
   const [form, setForm] = useState<Partial<MenuItem>>(empty);
   const [imageFile, setImageFile] = useState<File | null>(null); // ← קובץ מקומי שנבחר
 
-  const load = async () => setItems(await api.getMenu());
-  useEffect(() => { load(); }, []);
+  const load = async () => {
+    if (token) {
+      try {
+        const all = await api.getAllMenuItems(token);
+        setItems(all);
+        return;
+      } catch (err) {
+        console.warn('failed to load admin list, falling back to public', err);
+      }
+    }
+    setItems(await api.getMenu());
+  };
+  useEffect(() => { load(); }, [token]);
 
   const save = async (e: any) => {
     e.preventDefault();
@@ -27,26 +38,41 @@ const AdminMenuEditor: React.FC = () => {
       return alert('שם ומחיר נדרשים');
     }
 
-    // אם נבחר קובץ → העלאה ל-Cloudinary
-    if (imageFile) {
-      try {
-        // העלאת הקובץ ל-Cloudinary וקבלת URL
-        const secureUrl = await uploadImageToCloudinary(imageFile, {
-          cloudName: 'dsfieqr7i',  // החלף עם הפרטים שלך
-          uploadPreset: 'unsigned_preset',  // החלף עם ה-upload preset שלך
-        });
-        setForm(f => ({ ...f, imageUrl: secureUrl })); // עדכון ה-imageUrl ב-form
-
-        // יצירת המוצר בשרת
-        await api.createMenuItem(token, { ...form, imageUrl: secureUrl });
-
-      } catch (err) {
-        console.error('העלאת התמונה נכשלה:', err);
-        alert('העלאת התמונה נכשלה');
+    // If form has _id -> update, else create
+    if (form._id) {
+      const patch: Partial<MenuItem> = { ...form };
+      // if a new image file is selected, upload it first
+      if (imageFile) {
+        try {
+          const secureUrl = await uploadImageToCloudinary(imageFile, {
+            cloudName: 'dsfieqr7i',
+            uploadPreset: 'unsigned_preset',
+          });
+          patch.imageUrl = secureUrl;
+        } catch (err) {
+          console.error('Image upload failed:', err);
+          alert('Image upload failed');
+          return;
+        }
       }
+      await api.updateMenuItem(token, String(form._id), patch);
     } else {
-      // ללא קובץ → נשארים עם ה-API הקיים ששולח JSON עם imageUrl
-      await api.createMenuItem(token, form);
+      // create new item (with or without image)
+      if (imageFile) {
+        try {
+          const secureUrl = await uploadImageToCloudinary(imageFile, {
+            cloudName: 'dsfieqr7i',
+            uploadPreset: 'unsigned_preset',
+          });
+          setForm(f => ({ ...f, imageUrl: secureUrl }));
+          await api.createMenuItem(token, { ...form, imageUrl: secureUrl });
+        } catch (err) {
+          console.error('העלאת התמונה נכשלה:', err);
+          alert('העלאת התמונה נכשלה');
+        }
+      } else {
+        await api.createMenuItem(token, form);
+      }
     }
 
     // ניקוי הטופס והקובץ
@@ -122,10 +148,14 @@ const AdminMenuEditor: React.FC = () => {
                 </td>
                 <td><input defaultValue={i.category||''} onBlur={(e) => update(i._id, { category: e.target.value })} /></td>
                 <td>
-                  <input type="checkbox" defaultChecked={i.isAvailable} onChange={(e) => update(i._id, { isAvailable: e.target.checked })} />
+                  <input type="checkbox" checked={i.isAvailable} onChange={(e) => update(i._id, { isAvailable: e.target.checked })} />
                 </td>
                 <td>
-                  <button className="btn" style={{ background:'#888' }} onClick={() => update(i._id, { name: prompt('שם חדש', i.name)||i.name })}>ערוך</button>
+                  <button className="btn" style={{ background:'#888' }} onClick={() => {
+                    // populate full form for editing the entire item
+                    setForm({ ...i });
+                    setImageFile(null);
+                  }}>ערוך</button>
                   <button className="btn" style={{ background:'#c0392b' }} onClick={() => remove(i._id)}>מחק</button>
                 </td>
               </tr>
